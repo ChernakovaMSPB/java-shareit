@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item.model;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 import ru.practicum.shareit.user.User;
@@ -10,6 +11,7 @@ import ru.practicum.shareit.user.User;
  */
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Item {
     Long id;
     String name;

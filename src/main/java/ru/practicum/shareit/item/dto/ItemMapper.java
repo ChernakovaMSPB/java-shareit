@@ -9,23 +9,23 @@ import ru.practicum.shareit.user.User;
 @RequiredArgsConstructor
 public class ItemMapper {
     public static ItemDto toItemDto(Item item) {
-        ItemDto itemDto = new ItemDto();
-        itemDto.setId(item.getId());
-        itemDto.setName(item.getName());
-        itemDto.setDescription(item.getDescription());
-        itemDto.setAvailable(item.getAvailable());
-        return itemDto;
+        return ItemDto.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(item.getAvailable())
+                .build();
     }
 
     public static Item toItem(ItemDto itemDto, User owner, Long request) {
-        Item item = new Item();
-        item.setId(itemDto.getId());
-        item.setName(itemDto.getName());
-        item.setAvailable(itemDto.getAvailable());
-        item.setDescription(itemDto.getDescription());
-        item.setOwner(owner);
-        item.setRequest(request);
-        return item;
+        return Item.builder()
+                .id(itemDto.getId())
+                .name(itemDto.getName())
+                .available(itemDto.getAvailable())
+                .description(itemDto.getDescription())
+                .owner(owner)
+                .request(request)
+                .build();
     }
 
 }
