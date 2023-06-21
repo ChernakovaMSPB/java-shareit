@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.BagRequestException;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
 
@@ -15,26 +16,28 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
     private final UserMapper userMapper;
+
+    private Long userId = Long.valueOf(1);
 
     @Override
     public List<UserDto> getAllUsers() {
         log.debug("Показаны все пользователи");
-        return userStorage.getAllUsers()
+        return userRepository.findAll()
                 .stream()
-                .map(userMapper::toUserDto)
+                .map(UserMapper::toUserDto)
                 .collect(Collectors.toList());
     }
 
     @Override
     public UserDto getUserById(Long userId) {
         try {
-            return userMapper.toUserDto(userStorage.getUserById(userId));
+            return UserMapper.toUserDto(userRepository.findById(userId).orElseThrow());
         } catch (NoSuchElementException e) {
             log.trace("[X] Пользователь с _{} ID не существует", userId);
         }
-        throw new RuntimeException();
+        throw new NotFoundException("[X] Пользователь с " + userId + "ID не существует");
     }
 
     @Override
@@ -43,15 +46,21 @@ public class UserServiceImpl implements UserService {
             throw new BagRequestException("Неверные данные пользователя");
         }
         checkIsValid(user);
-        User addedUser = userStorage.create(userMapper.toUser(user));
+        user.setId(userId);
+        ++userId;
+        User addedUser = userMapper.toUser(user);
+        userRepository.save(addedUser);
         log.debug("[V] Пользователь с ID _{} добавлен", user.getId());
         return userMapper.toUserDto(addedUser);
     }
 
     @Override
     public UserDto update(Long userId, UserDto user) {
-        user.setId(userId);
-        User updatedUser = userStorage.update(userMapper.toUser(user));
+        checkIsValid(user);
+        User updatedUser = userRepository.findById(userId).orElseThrow();
+        if (user.getName() != null) updatedUser.setName(user.getName());
+        if (user.getEmail() != null) updatedUser.setEmail(user.getEmail());
+        userRepository.save(updatedUser);
         log.debug("[V] Пользователь с ID _{} успешно обновлен", user.getId());
         return userMapper.toUserDto(updatedUser);
 
@@ -59,7 +68,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void remove(Long userId) {
-        userStorage.remove(userId);
+        userRepository.deleteById(userId);
         log.debug("[V] Пользователь с ID _{} успешно удален", userId);
     }
 
