@@ -78,9 +78,8 @@ public class ItemServiceImpl implements ItemService {
         if (userId == null) {
             throw new BagRequestException("Id не указан");
         }
-        return itemRepository.findAll()
+        return itemRepository.findItemByOwnerId(userId)
                 .stream()
-                .filter(s -> s.getOwner().getId().equals(userId))
                 .map(s -> constructItemDtoForOwner(s, LocalDateTime.now(), userId))
                 .sorted(Comparator.comparing(s -> s.getId()))
                 .collect(toList());
