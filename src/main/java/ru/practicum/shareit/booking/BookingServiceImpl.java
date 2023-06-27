@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -76,12 +77,15 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getUserBookings(String state, Long userId) {
+    public List<BookingDto> getUserBookings(String state, Long userId, int from, int size) {
+        if (from < 0 || size <= 0) {
+            throw new BagRequestException("Неверные значения параметров");
+        }
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         Sort sort = Sort.by("start").descending();
         switch (state) {
             case "ALL":
-                return bookingRepository.findAllByBooker_IdOrderByStartDesc(userId)
+                return bookingRepository.findAllByBooker_IdOrderByStartDesc(userId, PageRequest.of(from / size, size))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
@@ -96,12 +100,12 @@ public class BookingServiceImpl implements BookingService {
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case "PAST":
-                return bookingRepository.findAllByBooker_IdAndEndIsBefore(userId, LocalDateTime.now(), sort)
+                return bookingRepository.findAllByBooker_IdAndEndIsBefore(userId, LocalDateTime.now(), PageRequest.of(from / size, size, sort))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case "FUTURE":
-                return bookingRepository.findAllByBooker_IdAndStartIsAfter(userId, LocalDateTime.now(), sort)
+                return bookingRepository.findAllByBooker_IdAndStartIsAfter(userId, LocalDateTime.now(), PageRequest.of(from / size, size, sort))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
@@ -116,12 +120,15 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getUserItemsBookings(String state, Long userId) {
+    public List<BookingDto> getUserItemsBookings(String state, Long userId, int from, int size) {
+        if (from < 0 || size <= 0) {
+            throw new BagRequestException("Неверные значения параметров");
+        }
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
         Sort sort = Sort.by("start").descending();
         switch (state) {
             case "ALL":
-                return bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId)
+                return bookingRepository.findAllByItemOwnerIdOrderByStartDesc(userId, PageRequest.of(from / size, size))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
@@ -136,12 +143,12 @@ public class BookingServiceImpl implements BookingService {
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case "PAST":
-                return bookingRepository.findAllByItemOwnerIdAndEndIsBefore(userId, LocalDateTime.now(), sort)
+                return bookingRepository.findAllByItemOwnerIdAndEndIsBefore(userId, LocalDateTime.now(), PageRequest.of(from / size, size, sort))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());
             case "FUTURE":
-                return bookingRepository.findAllByItemOwnerIdAndStartIsAfter(userId, LocalDateTime.now(), sort)
+                return bookingRepository.findAllByItemOwnerIdAndStartIsAfter(userId, LocalDateTime.now(), PageRequest.of(from / size, size, sort))
                         .stream()
                         .map(BookingMapper::toBookingDto)
                         .collect(Collectors.toList());

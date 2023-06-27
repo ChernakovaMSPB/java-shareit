@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.*;
@@ -41,7 +42,7 @@ public class ItemServiceImpl implements ItemService {
         if (ownerId == null) {
             throw new BagRequestException("Id не указан");
         }
-        Item createdItem = itemMapper.toItem(item, userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Некорректный владелец с ID")), null);
+        Item createdItem = itemMapper.toItem(item, userRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("Некорректный владелец с ID")));
         createdItem.setId(itemId);
         ++itemId;
         itemRepository.save(createdItem);
@@ -74,11 +75,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getItemsByUser(Long userId) {
+    public List<ItemDto> getItemsByUser(Long userId, int from, int size) {
         if (userId == null) {
             throw new BagRequestException("Id не указан");
         }
-        return itemRepository.findItemByOwnerId(userId)
+        return itemRepository.findItemByOwnerId(userId, PageRequest.of(from / size, size))
                 .stream()
                 .map(s -> constructItemDtoForOwner(s, LocalDateTime.now(), userId))
                 .sorted(Comparator.comparing(s -> s.getId()))
@@ -86,11 +87,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> searchItems(String search) {
+    public List<ItemDto> searchItems(String search, int from, int size) {
         if (search.isEmpty()) {
             return new LinkedList<>();
         }
-        return itemRepository.search(search)
+        return itemRepository.search(search, PageRequest.of(from / size, size))
                 .stream()
                 .filter(Item::getAvailable)
                 .map(ItemMapper::toItemDto)
@@ -98,9 +99,18 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public List<ItemDto> getItemsByRequestId(Long itemRequestId) {
+        return itemRepository.findAll()
+                .stream()
+                .filter(s -> s.getRequest() != null && s.getRequest().equals(itemRequestId))
+                .map(ItemMapper::toItemDto)
+                .collect(toList());
+    }
+
+    @Override
     public CommentDto create(CommentDto commentDto, Long itemId, Long userId) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
-        BookingDto bookingDto = bookingService.getUserBookings(Status.APPROVED.toString(), userId)
+        userRepository.existsById(userId);
+        BookingDto bookingDto = bookingService.getUserBookings(Status.APPROVED.toString(), userId, 0, 20)
                 .stream()
                 .filter(s -> s.getItem().getId().equals(itemId))
                 .min(Comparator.comparing(BookingDto::getEnd)).orElse(null);
