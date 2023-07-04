@@ -57,13 +57,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto update(Long userId, UserDto user) {
         checkIsValid(user);
-        User updatedUser = userRepository.findById(userId).orElseThrow();
+        User updatedUser = userRepository.findById(userId).orElseThrow(() ->
+                new NotFoundException("[X] Пользователь с " + userId + "ID не существует")
+        );
         if (user.getName() != null) updatedUser.setName(user.getName());
         if (user.getEmail() != null) updatedUser.setEmail(user.getEmail());
         userRepository.save(updatedUser);
         log.debug("[V] Пользователь с ID _{} успешно обновлен", user.getId());
         return userMapper.toUserDto(updatedUser);
-
     }
 
     @Override

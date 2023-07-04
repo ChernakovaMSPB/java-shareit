@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -82,8 +83,8 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository.findItemByOwnerId(userId, PageRequest.of(from / size, size))
                 .stream()
                 .map(s -> constructItemDtoForOwner(s, LocalDateTime.now(), userId))
-                .sorted(Comparator.comparing(s -> s.getId()))
-                .collect(toList());
+                .sorted(Comparator.comparing(s -> s.getId(), Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -136,7 +137,10 @@ public class ItemServiceImpl implements ItemService {
                 .collect(toList());
     }
 
-    private ItemDto constructItemDtoForOwner(Item item, LocalDateTime now, Long userId) {
+    public ItemDto constructItemDtoForOwner(Item item, LocalDateTime now, Long userId) {
+        if (item == null) {
+            return null;
+        }
         ItemDto itemDto = ItemMapper.toItemDto(item);
         Booking lastBooking = bookingRepository
                 .findAll()
@@ -164,4 +168,5 @@ public class ItemServiceImpl implements ItemService {
         itemDto.setComments(getCommentsByItemId(item.getId()));
         return itemDto;
     }
+
 }

@@ -1,47 +1,72 @@
 package ru.practicum.shareit.request;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.booking.dto.BookingForItemDto;
-import ru.practicum.shareit.item.dto.ItemDto;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
-import ru.practicum.shareit.user.dto.UserDto;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ItemRequestController.class)
-@AutoConfigureMockMvc
+@RunWith(MockitoJUnitRunner.class)
 public class ItemRequestControllerTest {
 
-    @Autowired
-    private MockMvc mvc;
+    @Mock
+    private ItemRequestService itemRequestService;
 
-    @MockBean
+    @InjectMocks
     private ItemRequestController itemRequestController;
 
-    private UserDto requestor = new UserDto(1L, "requestor", "request@mail.ru");
-    private ItemDto requestedItem = new ItemDto(1L, "item", "desc", true,
-            new BookingForItemDto(), new BookingForItemDto(), List.of(), 1L);
-    private ItemRequestDto itemRequestDto1 = new ItemRequestDto(1L, "desc 1",
-            requestor, LocalDateTime.now(), List.of(requestedItem));
+    @Test
+    public void testCreate() {
+        ItemRequestDto itemRequestDto = new ItemRequestDto();
+        Long userId = 1L;
+        ItemRequestDto expectedResult = new ItemRequestDto();
+        when(itemRequestService.create(itemRequestDto, userId)).thenReturn(expectedResult);
+
+        ItemRequestDto result = itemRequestController.create(itemRequestDto, userId);
+
+        assertEquals(expectedResult, result);
+    }
 
     @Test
-    public void createItemRequestTest() throws Exception {
-        itemRequestController.create(itemRequestDto1, requestor.getId());
-        when(itemRequestController.getRequest(requestor.getId(), itemRequestDto1.getId()))
-                .thenReturn(itemRequestDto1);
+    public void testGetUserRequests() {
+        Long userId = 1L;
+        List<ItemRequestDto> expectedResult = new ArrayList<>();
+        when(itemRequestService.getUserRequests(userId)).thenReturn(expectedResult);
 
-        mvc.perform(get("/requests/" + itemRequestDto1.getId())
-                        .header("X-Sharer-User-Id", "1"))
-                .andExpect(status().isOk());
+        List<ItemRequestDto> result = itemRequestController.getUserRequests(userId);
+
+        assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void testGetOtherUserRequests() {
+        Long userId = 1L;
+        int from = 0;
+        int size = 1;
+        List<ItemRequestDto> expectedResult = new ArrayList<>();
+        when(itemRequestService.getOtherUserRequests(userId, from, size)).thenReturn(expectedResult);
+
+        List<ItemRequestDto> result = itemRequestController.getOtherUserRequests(userId, from, size);
+
+        assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void testGetRequest() {
+        Long userId = 1L;
+        Long requestId = 1L;
+        ItemRequestDto expectedResult = new ItemRequestDto();
+        when(itemRequestService.getRequest(userId, requestId)).thenReturn(expectedResult);
+
+        ItemRequestDto result = itemRequestController.getRequest(userId, requestId);
+
+        assertEquals(expectedResult, result);
     }
 }

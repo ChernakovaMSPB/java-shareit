@@ -1,109 +1,86 @@
 package ru.practicum.shareit.user;
 
-import com.google.gson.Gson;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 import ru.practicum.shareit.user.dto.UserDto;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.Assert.assertEquals;
 
-@WebMvcTest(UserController.class)
-@AutoConfigureMockMvc
+@RunWith(MockitoJUnitRunner.class)
 public class UserControllerTest {
-    @Autowired
-    private MockMvc mvc;
+    @Mock
+    private UserService userService;
 
-    Gson gson = new Gson();
-
-    @MockBean
+    @InjectMocks
     private UserController userController;
-    private UserDto userDto1 = new UserDto(Long.valueOf(1), "user1", "user1@test.ru");
-    private UserDto userDto2 = new UserDto(Long.valueOf(2), "user2", "user2@test.ru");
-    private UserDto userDto2Update = new UserDto(Long.valueOf(2), "user2", "update2@test.ru");
 
-    @Test
-    public void getAllUsersTest() throws Exception {
-        userController.create(userDto1);
-        when(userController.getAllUsers())
-                .thenReturn(List.of(userDto1));
-
-        mvc.perform(get("/users"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(List.of(userDto1))));
-
+    @BeforeEach
+    public void setUp() {
+        userService = Mockito.mock(UserService.class);
+        userController = new UserController(userService);
     }
 
     @Test
-    public void getUserByIdTest() throws Exception {
-        userController.create(userDto1);
-        when(userController.getUserById(userDto1.getId()))
-                .thenReturn(userDto1);
+    public void testGetAllUsers() {
+        List<UserDto> users = new ArrayList<>();
+        users.add(UserDto.builder().id(1L).name("John").email("john@example.com").build());
+        users.add(UserDto.builder().id(2L).name("Jane").email("jane@example.com").build());
+        Mockito.when(userService.getAllUsers()).thenReturn(users);
 
-        mvc.perform(get("/users/" + userDto1.getId().toString()))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(userDto1)));
+        List<UserDto> result = userController.getAllUsers();
+
+        assertEquals(users, result);
+        Mockito.verify(userService).getAllUsers();
     }
 
     @Test
-    public void createUserTest() throws Exception {
-        userController.create(userDto2);
-        when(userController.create(userDto2))
-                .thenReturn(userDto2);
+    public void testGetUserById() {
+        UserDto user = UserDto.builder().id(1L).name("John").email("john@example.com").build();
+        Mockito.when(userService.getUserById(1L)).thenReturn(user);
 
-        mvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(gson.toJson(userDto2)))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(userDto2)));
+        UserDto result = userController.getUserById(1L);
+
+        assertEquals(user, result);
+        Mockito.verify(userService).getUserById(1L);
     }
 
     @Test
-    public void updateUserTest() throws Exception {
-        userController.create(userDto2);
-        userController.update(userDto2.getId(), userDto2Update);
+    public void testCreate() {
+        UserDto user = UserDto.builder().id(null).name("John").email("john@example.com").build();
+        UserDto createdUser = UserDto.builder().id(1L).name("John").email("john@example.com").build();
+        Mockito.when(userService.create(user)).thenReturn(createdUser);
 
-        when(userController.update(userDto2.getId(), userDto2Update))
-                .thenReturn(userDto2Update);
+        UserDto result = userController.create(user);
 
-        mvc.perform(patch("/users/" + userDto2.getId().toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(gson.toJson(userDto2Update)))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(userDto2Update)));
+        assertEquals(createdUser, result);
+        Mockito.verify(userService).create(user);
     }
 
     @Test
-    public void removeUserTest() throws Exception {
-        userController.create(userDto1);
-        userController.create(userDto2);
+    public void testUpdate() {
+        UserDto user = UserDto.builder().id(1L).name("John").email("john@example.com").build();
+        UserDto updatedUser = UserDto.builder().id(1L).name("John Doe").email("john.doe@example.com").build();
+        Mockito.when(userService.update(1L, user)).thenReturn(updatedUser);
 
-        when(userController.getAllUsers())
-                .thenReturn(List.of(userDto1, userDto2));
+        UserDto result = userController.update(1L, user);
 
-        mvc.perform(get("/users"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(List.of(userDto1, userDto2))));
-
-        mvc.perform(delete("/users/" + userDto1.getId().toString()))
-                .andExpect(status().isOk());
-
-        when(userController.getAllUsers())
-                .thenReturn(List.of(userDto2));
-
-        mvc.perform(get("/users"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(List.of(userDto2))));
-
+        assertEquals(updatedUser, result);
+        Mockito.verify(userService).update(1L, user);
     }
+
+    @Test
+    public void testRemove() {
+        userController.remove(1L);
+
+        Mockito.verify(userService).remove(1L);
+    }
+
 }

@@ -1,140 +1,194 @@
 package ru.practicum.shareit.item;
 
-import com.google.gson.Gson;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.hamcrest.Matchers.is;
 
-@WebMvcTest(ItemController.class)
-@AutoConfigureMockMvc
+@RunWith(MockitoJUnitRunner.class)
 public class ItemControllerTest {
+    @Mock
+    private ItemService itemService;
 
-    @Autowired
-    private MockMvc mvc;
-
-    Gson gson = new Gson();
-
-    @MockBean
+    @InjectMocks
     private ItemController itemController;
 
+    private MockMvc mockMvc;
+
+    @Before
+    public void setup() {
+        mockMvc = MockMvcBuilders.standaloneSetup(itemController).build();
+    }
+
     @Test
-    public void createItemTest() throws Exception {
-        ItemDto itemToAdd = new ItemDto();
-        itemToAdd.setName("item1");
-        itemToAdd.setDescription("desc 1");
-        itemToAdd.setAvailable(true);
+    public void testCreateItem() throws Exception {
+        Long ownerId = 1L;
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Test Item");
+        itemDto.setDescription("Test Description");
+        itemDto.setAvailable(true);
 
-        itemController.create(1L, itemToAdd);
-        when(itemController.create(anyLong(), any()))
-                .thenReturn(itemToAdd);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setId(1L);
+        expectedItemDto.setName("Test Item");
+        expectedItemDto.setDescription("Test Description");
+        expectedItemDto.setAvailable(true);
 
-        mvc.perform(post("/items")
+        when(itemService.create(ownerId, itemDto)).thenReturn(expectedItemDto);
+
+        mockMvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", ownerId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(gson.toJson(itemToAdd))
-                        .header("X-Sharer-User-Id", "1"))
+                        .content(asJsonString(itemDto)))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(itemToAdd)));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Test Item")));
+
+        verify(itemService, times(1)).create(ownerId, itemDto);
     }
 
     @Test
-    public void updateItemTest() throws Exception {
-        ItemDto itemToAdd = new ItemDto();
-        itemToAdd.setName("item1");
-        itemToAdd.setDescription("desc 1");
-        itemToAdd.setAvailable(true);
+    public void testUpdateItem() throws Exception {
+        Long userId = 1L;
+        Long itemId = 1L;
+        ItemDto itemDto = new ItemDto();
+        itemDto.setId(itemId);
+        itemDto.setName("Updated Item");
 
-        itemController.create(1L, itemToAdd);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setId(itemId);
+        expectedItemDto.setName("Updated Item");
 
-        itemToAdd.setName("updatedName");
-        itemController.update(1L, itemToAdd, 1L);
-        when(itemController.update(anyLong(), any(), anyLong()))
-                .thenReturn(itemToAdd);
+        when(itemService.update(userId, itemDto)).thenReturn(expectedItemDto);
 
-        mvc.perform(MockMvcRequestBuilders.patch("/items/1")
-                        .header("X-Sharer-User-Id", "1")
+        mockMvc.perform(patch("/items/{itemId}", itemId)
+                        .header("X-Sharer-User-Id", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(gson.toJson(itemToAdd)))
+                        .content(asJsonString(itemDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(itemToAdd.getName()));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Updated Item")));
+
+        verify(itemService, times(1)).update(userId, itemDto);
+    }
+
+    private static String asJsonString(final Object obj) {
+        try {
+            return new ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
-    public void getItemByIdTest() throws Exception {
-        ItemDto itemToAdd = new ItemDto();
-        itemToAdd.setName("item1");
-        itemToAdd.setDescription("desc 1");
-        itemToAdd.setAvailable(true);
-        itemController.create(1L, itemToAdd);
+    public void testGetItemById() throws Exception {
+        Long itemId = 1L;
+        Long requestorId = 1L;
 
-        itemController.getItemById(itemToAdd.getId(), 1L);
-        when(itemController.getItemById(anyLong(), anyLong()))
-                .thenReturn(itemToAdd);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setId(itemId);
+        expectedItemDto.setName("Test Item");
 
-        mvc.perform(MockMvcRequestBuilders.get("/items/1")
-                        .header("X-Sharer-User-Id", "1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
+        when(itemService.getItemById(itemId, requestorId)).thenReturn(expectedItemDto);
 
-    @Test
-    public void getItemsByUserTest() throws Exception {
-        ItemDto itemToAdd = new ItemDto();
-        itemToAdd.setName("item1");
-        itemToAdd.setDescription("desc 1");
-        itemToAdd.setAvailable(true);
-        itemController.create(1L, itemToAdd);
-
-        itemController.getItemsByUser(1L, 0, 1);
-        when(itemController.getItemsByUser(anyLong(), anyInt(), anyInt()))
-                .thenReturn(List.of(itemToAdd));
-
-        mvc.perform(MockMvcRequestBuilders.get("/items/")
-                        .header("X-Sharer-User-Id", "1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/items/{itemId}", itemId)
+                        .header("X-Sharer-User-Id", requestorId))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(List.of(itemToAdd))));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Test Item")));
+
+        verify(itemService, times(1)).getItemById(itemId, requestorId);
     }
 
     @Test
-    public void searchItemsTest() throws Exception {
-        itemController.searchItems("search", 0, 1);
-        when(itemController.searchItems(anyString(), anyInt(), anyInt()))
-                .thenReturn(List.of());
+    public void testGetItemsByUser() throws Exception {
+        Long userId = 1L;
+        int from = 0;
+        int size = 20;
 
-        mvc.perform(MockMvcRequestBuilders.get("/items/search?text=search")
-                        .header("X-Sharer-User-Id", "1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        List<ItemDto> expectedItems = new ArrayList<>();
+        expectedItems.add(new ItemDto(1L, "Item 1", "", true, null, null, null, null));
+        expectedItems.add(new ItemDto(2L, "Item 2", "", true, null, null, null, null));
+
+        when(itemService.getItemsByUser(userId, from, size)).thenReturn(expectedItems);
+
+        mockMvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", userId)
+                        .param("from", String.valueOf(from))
+                        .param("size", String.valueOf(size)))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(gson.toJson(List.of())));
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].name", is("Item 1")))
+                .andExpect(jsonPath("$[1].id", is(2)))
+                .andExpect(jsonPath("$[1].name", is("Item 2")));
+
+        verify(itemService, times(1)).getItemsByUser(userId, from, size);
     }
 
     @Test
-    public void createComment() throws Exception {
+    public void testSearchItems() throws Exception {
+        String text = "test";
+        int from = 0;
+        int size = 20;
+
+        List<ItemDto> expectedItems = new ArrayList<>();
+        expectedItems.add(new ItemDto(1L, "Item 1", "", true, null, null, null, null));
+        expectedItems.add(new ItemDto(2L, "Item 2", "", true, null, null, null, null));
+
+        when(itemService.searchItems(text, from, size)).thenReturn(expectedItems);
+
+        mockMvc.perform(get("/items/search")
+                        .param("text", text)
+                        .param("from", String.valueOf(from))
+                        .param("size", String.valueOf(size)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].name", is("Item 1")))
+                .andExpect(jsonPath("$[1].id", is(2)))
+                .andExpect(jsonPath("$[1].name", is("Item 2")));
+
+        verify(itemService, times(1)).searchItems(text, from, size);
+    }
+
+    @Test
+    public void testCreateComment() throws Exception {
+        Long userId = 1L;
+        Long itemId = 1L;
+
         CommentDto commentDto = new CommentDto();
-        itemController.create(commentDto, 1L, 1L);
-        when(itemController.create(any(), anyLong(), anyLong()))
-                .thenReturn(commentDto);
+        commentDto.setText("Test Comment");
 
-        mvc.perform(MockMvcRequestBuilders.post("/items/1/comment")
-                        .header("X-Sharer-User-Id", "1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+        CommentDto expectedCommentDto = new CommentDto();
+        expectedCommentDto.setId(1L);
+        expectedCommentDto.setText("Test Comment");
+
+        when(itemService.create(commentDto, itemId, userId)).thenReturn(expectedCommentDto);
+
+        mockMvc.perform(post("/items/{itemId}/comment", itemId)
+                        .header("X-Sharer-User-Id", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(commentDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.text", is("Test Comment")));
+
+        verify(itemService, times(1)).create(commentDto, itemId, userId);
     }
 }
