@@ -82,5 +82,4 @@ public class UserControllerTest {
 
         Mockito.verify(userService).remove(1L);
     }
-
 }
