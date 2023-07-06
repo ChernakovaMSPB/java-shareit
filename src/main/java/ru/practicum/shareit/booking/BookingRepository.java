@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -8,17 +9,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
-    List<Booking> findAllByBooker_IdOrderByStartDesc(Long bookerId);
+    Page<Booking> findAllByBooker_IdOrderByStartDesc(Long bookerId, Pageable pageable);
 
-    List<Booking> findAllByBooker_IdAndEndIsBefore(Long bookerId, LocalDateTime end, Sort sort);
+    Page<Booking> findAllByBooker_IdAndEndIsBefore(Long bookerId, LocalDateTime end, Pageable pageable);
 
-    List<Booking> findAllByBooker_IdAndStartIsAfter(Long bookerId, LocalDateTime start, Sort sort);
+    Page<Booking> findAllByBooker_IdAndStartIsAfter(Long bookerId, LocalDateTime start, Pageable pageable);
 
-    List<Booking> findAllByItemOwnerIdOrderByStartDesc(Long ownerId);
+    Page<Booking> findAllByItemOwnerIdOrderByStartDesc(Long ownerId, Pageable pageable);
 
-    List<Booking> findAllByItemOwnerIdAndEndIsBefore(Long bookerId, LocalDateTime end, Sort sort);
+    Page<Booking> findAllByItemOwnerIdAndEndIsBefore(Long bookerId, LocalDateTime end, Pageable pageable);
 
-    List<Booking> findAllByItemOwnerIdAndStartIsAfter(Long bookerId, LocalDateTime start, Sort sort);
+    Page<Booking> findAllByItemOwnerIdAndStartIsAfter(Long bookerId, LocalDateTime start, Pageable pageable);
 
     @Query("select b from bookings b " +
             "where b.booker.id = :bookerId and " +

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS requests (
     id BIGINT NOT NULL,
     description VARCHAR(512),
     users_id BIGINT NOT NULL,
+    created TIMESTAMP WITHOUT TIME ZONE,
     CONSTRAINT requests_pk PRIMARY KEY (id)
 );
 
