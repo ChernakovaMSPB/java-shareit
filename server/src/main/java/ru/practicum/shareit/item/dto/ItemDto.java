@@ -19,8 +19,11 @@ import java.util.List;
 @Builder
 public class ItemDto {
     Long id;
+    @NotEmpty
     String name;
+    @NotEmpty
     String description;
+    @NotNull
     Boolean available;
     BookingForItemDto lastBooking;
     BookingForItemDto nextBooking;
