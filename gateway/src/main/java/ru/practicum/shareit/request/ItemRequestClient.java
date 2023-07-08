@@ -42,7 +42,7 @@ public class ItemRequestClient extends BaseClient {
           return get("/all?from={from}&size={size}", userId, parametrs);
     }
 
-    public ResponseEntity<Object> getRequest(Long requestId, Long userId) {
+    public ResponseEntity<Object> getRequest(Long userId, Long requestId) {
         return get("/" + requestId, userId);
     }
 }

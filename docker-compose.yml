@@ -28,7 +28,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   db:
-    image: postgres:13/7-alpine
+    image: postgres:14-alpine
     container_name: shareit-db-postgres
 #    container_name: shareit-db
     ports:
