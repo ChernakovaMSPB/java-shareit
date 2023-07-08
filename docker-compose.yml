@@ -20,20 +20,18 @@ services:
     depends_on:
       - db
     environment:
-#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/shareit
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
-#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/shareit
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/shareit
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=pandora2000
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   db:
-    image: postgres:14-alpine
+#    image: postgres:14.8
+    image: postgres:13.7-alpine
     container_name: shareit-db-postgres
-#    container_name: shareit-db
+
     ports:
       - "6541:5432"
     environment:
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=shareit
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=pandora2000
