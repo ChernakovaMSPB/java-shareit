@@ -9,7 +9,7 @@ services:
     depends_on:
       - server
     environment:
-      - SHAREIT_SERVER_URL=http://shareit-server:9090
+      - SHAREIT_SERVER_URL=http://server:9090
 
   server:
     build: ./server
@@ -25,7 +25,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=pandora2000
 
   db:
-#    image: postgres:14.8
     image: postgres:13.7-alpine
     container_name: shareit-db-postgres
 
